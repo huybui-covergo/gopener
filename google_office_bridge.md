@@ -61,7 +61,20 @@ A desktop application built with Tauri (Rust + Vue) that allows users to open lo
 - Toggle "Keep original file name" vs. custom naming
 - Language selection (if supporting i18n)
 
-### 5. Recent Files History
+### 5. OAuth Credential Options
+**Priority: High**
+- **Default App Credentials**: Use pre-configured OAuth credentials (easiest for most users)
+- **Custom OAuth Credentials**: Allow users to provide their own Google Cloud OAuth credentials
+  - Input fields for Client ID and Client Secret
+  - Instructions/link to create Google Cloud project
+  - Validation of credentials before saving
+  - Secure storage of custom credentials in system keychain
+- Benefits of custom credentials:
+  - Full control over API quotas
+  - Enhanced privacy (no third-party app access)
+  - Required for enterprise/organizational accounts with restrictions
+
+### 6. Recent Files History
 **Priority: Medium**
 - Display last 10-20 uploaded files
 - Quick re-open in Google Docs/Sheets/Slides
@@ -71,42 +84,42 @@ A desktop application built with Tauri (Rust + Vue) that allows users to open lo
 
 ## Extended Features (Post-MVP)
 
-### 6. Batch Upload
+### 7. Batch Upload
 **Priority: Medium**
 - Upload multiple files at once
 - Queue management
 - Pause/resume uploads
 
-### 7. File Conversion Options
+### 8. File Conversion Options
 **Priority: Medium**
 - Choose whether to convert to Google format or keep as Office format
 - Preview before upload
 - Format compatibility warnings
 
-### 8. Advanced Organization
+### 9. Advanced Organization
 **Priority: Low**
 - Auto-organize by file type into folders
 - Add tags/labels during upload
 - Custom naming templates (e.g., `{filename}_{date}`)
 
-### 9. Offline Mode
+### 10. Offline Mode
 **Priority: Low**
 - Queue files for upload when connection restored
 - Local cache of recent files metadata
 
-### 10. Collaboration Features
+### 11. Collaboration Features
 **Priority: Low**
 - Share link generation after upload
 - Set permissions during upload
 - Quick share to email addresses
 
-### 11. System Integration
+### 12. System Integration
 **Priority: Medium**
 - Right-click context menu integration (Windows/macOS)
 - Set as default app for Office files
 - Global keyboard shortcuts
 
-### 12. File Watching
+### 13. File Watching
 **Priority: Low**
 - Monitor specific folders for new Office files
 - Auto-upload when detected
@@ -129,7 +142,8 @@ src/
 ├── stores/
 │   ├── auth.ts               # Pinia store for authentication
 │   ├── upload.ts             # Upload state management
-│   └── settings.ts           # User preferences
+│   ├── settings.ts           # User preferences
+│   └── oauth-config.ts       # OAuth credential configuration
 ├── services/
 │   ├── google-api.ts         # Google Drive API wrapper
 │   └── tauri-commands.ts     # Tauri backend communication
@@ -145,7 +159,8 @@ src-tauri/
 │   │   ├── auth.rs           # OAuth handling
 │   │   ├── upload.rs         # File upload logic
 │   │   ├── storage.rs        # Secure credential storage
-│   │   └── fileassoc.rs      # File association registration
+│   │   ├── fileassoc.rs      # File association registration
+│   │   └── oauth_config.rs   # Custom OAuth credential management
 │   ├── google/
 │   │   ├── client.rs         # Google API client
 │   │   └── drive.rs          # Drive-specific operations
@@ -227,6 +242,13 @@ keyring = "2.0"  # Secure credential storage
 
 1. **First Launch**
    - User opens app
+   - App shows credential choice:
+     - "Use Default Credentials" (recommended for most users)
+     - "Use My Own Credentials" (for advanced users/enterprises)
+   - If custom credentials selected:
+     - User enters Client ID and Client Secret
+     - Link provided: "How to create Google OAuth credentials"
+     - Credentials validated and stored securely
    - Clicks "Sign in with Google"
    - Authenticates via browser
    - Returns to app (authenticated)
@@ -263,11 +285,14 @@ keyring = "2.0"  # Secure credential storage
 ## Security Considerations
 
 - Store OAuth tokens in system keychain (not plain text)
-- Use PKCE flow for OAuth
+- Store custom OAuth credentials securely in system keychain
+- Use PKCE flow for OAuth (required for both default and custom credentials)
 - Validate file types before upload
 - Implement file size limits
-- Clear sensitive data on sign-out
+- Clear sensitive data on sign-out (including custom credentials if requested)
 - Use HTTPS for all API calls
+- Custom credentials never transmitted to app servers
+- Validate custom Client ID format before storage
 
 ---
 
@@ -277,7 +302,7 @@ keyring = "2.0"  # Secure credential storage
 - Single file upload with conversion
 - Double-click file association
 - Command-line argument handling
-- Google authentication
+- Google authentication with OAuth credential options (default or custom)
 - Folder selection with browse capability
 - Basic settings (default folder, auto-open, auto-close after upload)
 - Recent files history (last 10)
