@@ -38,6 +38,8 @@ A desktop application built with Tauri (Rust + Vue) that allows users to open lo
 - Upload to Google Drive with automatic conversion to Google format
 - Real-time upload progress indicator
 - Success/error notifications
+- Configuration UI must follow "Neutral Desktop" design (like Linear, VS Code, Discord, and Slack
+) to support multi OS (Windows, Mac and Linux)
 
 ### 2. Google Authentication
 **Priority: Critical**
