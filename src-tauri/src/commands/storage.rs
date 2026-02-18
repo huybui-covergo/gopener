@@ -100,3 +100,133 @@ pub async fn clear_recent_files() -> Result<(), String> {
     settings.recent_files.clear();
     save_settings(settings).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_settings_default() {
+        let settings = Settings::new();
+        assert_eq!(settings.default_folder_id, None);
+        assert_eq!(settings.default_folder_name, None);
+        assert!(settings.auto_open_after_upload);
+        assert!(!settings.auto_close_after_upload);
+        assert_eq!(settings.theme, "dark");
+        assert!(settings.recent_files.is_empty());
+    }
+
+    #[test]
+    fn test_settings_derive_default() {
+        let settings = Settings::default();
+        assert_eq!(settings.theme, "");
+        assert!(settings.recent_files.is_empty());
+    }
+
+    #[test]
+    fn test_settings_serialization() {
+        let settings = Settings::new();
+        let json = serde_json::to_string(&settings).unwrap();
+        assert!(json.contains("\"theme\":\"dark\""));
+        assert!(json.contains("\"auto_open_after_upload\":true"));
+        assert!(json.contains("\"auto_close_after_upload\":false"));
+    }
+
+    #[test]
+    fn test_settings_deserialization() {
+        let json = r#"{
+            "default_folder_id": "folder-123",
+            "default_folder_name": "My Folder",
+            "auto_open_after_upload": false,
+            "auto_close_after_upload": true,
+            "theme": "light",
+            "recent_files": []
+        }"#;
+
+        let settings: Settings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.default_folder_id, Some("folder-123".to_string()));
+        assert_eq!(settings.default_folder_name, Some("My Folder".to_string()));
+        assert!(!settings.auto_open_after_upload);
+        assert!(settings.auto_close_after_upload);
+        assert_eq!(settings.theme, "light");
+        assert!(settings.recent_files.is_empty());
+    }
+
+    #[test]
+    fn test_settings_roundtrip() {
+        let mut settings = Settings::new();
+        settings.default_folder_id = Some("abc".to_string());
+        settings.theme = "light".to_string();
+        settings.recent_files.push(RecentFile {
+            id: "file-1".to_string(),
+            name: "test.docx".to_string(),
+            path: "/path/to/test.docx".to_string(),
+            google_url: "https://docs.google.com/document/d/abc".to_string(),
+            file_type: "Google Docs".to_string(),
+            uploaded_at: 1700000000,
+        });
+
+        let json = serde_json::to_string_pretty(&settings).unwrap();
+        let deserialized: Settings = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.default_folder_id, settings.default_folder_id);
+        assert_eq!(deserialized.theme, settings.theme);
+        assert_eq!(deserialized.recent_files.len(), 1);
+        assert_eq!(deserialized.recent_files[0].id, "file-1");
+        assert_eq!(deserialized.recent_files[0].name, "test.docx");
+    }
+
+    #[test]
+    fn test_recent_file_serialization() {
+        let file = RecentFile {
+            id: "rf-1".to_string(),
+            name: "report.xlsx".to_string(),
+            path: "/home/user/report.xlsx".to_string(),
+            google_url: "https://docs.google.com/spreadsheets/d/xyz".to_string(),
+            file_type: "Google Sheets".to_string(),
+            uploaded_at: 1700000000,
+        };
+
+        let json = serde_json::to_string(&file).unwrap();
+        let deserialized: RecentFile = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.id, "rf-1");
+        assert_eq!(deserialized.name, "report.xlsx");
+        assert_eq!(deserialized.uploaded_at, 1700000000);
+    }
+
+    #[test]
+    fn test_recent_file_clone() {
+        let file = RecentFile {
+            id: "rf-1".to_string(),
+            name: "test.docx".to_string(),
+            path: "/test.docx".to_string(),
+            google_url: "https://...".to_string(),
+            file_type: "Google Docs".to_string(),
+            uploaded_at: 1700000000,
+        };
+
+        let cloned = file.clone();
+        assert_eq!(cloned.id, file.id);
+        assert_eq!(cloned.name, file.name);
+    }
+
+    #[test]
+    fn test_settings_with_multiple_recent_files() {
+        let mut settings = Settings::new();
+        for i in 0..15 {
+            settings.recent_files.push(RecentFile {
+                id: format!("file-{}", i),
+                name: format!("test-{}.docx", i),
+                path: format!("/path/test-{}.docx", i),
+                google_url: format!("https://docs.google.com/document/d/{}", i),
+                file_type: "Google Docs".to_string(),
+                uploaded_at: 1700000000 + i,
+            });
+        }
+
+        let json = serde_json::to_string(&settings).unwrap();
+        let deserialized: Settings = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.recent_files.len(), 15);
+    }
+}

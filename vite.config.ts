@@ -19,4 +19,14 @@ export default defineConfig({
       ignored: ["**/src-tauri/**"],
     },
   },
+  test: {
+    globals: true,
+    environment: "happy-dom",
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,vue}"],
+      exclude: ["src/main.ts", "src/vite-env.d.ts"],
+    },
+  },
 });

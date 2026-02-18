@@ -279,3 +279,101 @@ pub async fn get_valid_token() -> Result<String, String> {
         .access_token
         .ok_or_else(|| "Not authenticated".to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_pkce_produces_valid_pair() {
+        let (verifier, challenge) = generate_pkce();
+
+        assert!(!verifier.is_empty());
+        assert!(!challenge.is_empty());
+        assert_ne!(verifier, challenge);
+    }
+
+    #[test]
+    fn test_generate_pkce_produces_unique_values() {
+        let (v1, c1) = generate_pkce();
+        let (v2, c2) = generate_pkce();
+
+        assert_ne!(v1, v2);
+        assert_ne!(c1, c2);
+    }
+
+    #[test]
+    fn test_pkce_challenge_is_sha256_of_verifier() {
+        let (verifier, challenge) = generate_pkce();
+
+        let mut hasher = Sha256::new();
+        hasher.update(verifier.as_bytes());
+        let hash = hasher.finalize();
+        let expected_challenge = URL_SAFE_NO_PAD.encode(hash);
+
+        assert_eq!(challenge, expected_challenge);
+    }
+
+    #[test]
+    fn test_auth_state_serialization() {
+        let state = AuthState {
+            is_authenticated: true,
+            access_token: Some("test-token".to_string()),
+            expires_at: Some(9999999999),
+        };
+
+        let json = serde_json::to_string(&state).unwrap();
+        assert!(json.contains("\"is_authenticated\":true"));
+        assert!(json.contains("\"access_token\":\"test-token\""));
+        assert!(json.contains("\"expires_at\":9999999999"));
+    }
+
+    #[test]
+    fn test_auth_state_unauthenticated() {
+        let state = AuthState {
+            is_authenticated: false,
+            access_token: None,
+            expires_at: None,
+        };
+
+        let json = serde_json::to_string(&state).unwrap();
+        let deserialized: AuthState = serde_json::from_str(&json).unwrap();
+
+        assert!(!deserialized.is_authenticated);
+        assert!(deserialized.access_token.is_none());
+        assert!(deserialized.expires_at.is_none());
+    }
+
+    #[test]
+    fn test_token_response_deserialization() {
+        let json = r#"{
+            "access_token": "ya29.test",
+            "refresh_token": "1//test",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }"#;
+
+        let response: TokenResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.access_token, "ya29.test");
+        assert_eq!(response.refresh_token, Some("1//test".to_string()));
+        assert_eq!(response.expires_in, 3600);
+        assert_eq!(response.token_type, "Bearer");
+    }
+
+    #[test]
+    fn test_token_response_without_refresh_token() {
+        let json = r#"{
+            "access_token": "ya29.test",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }"#;
+
+        let response: TokenResponse = serde_json::from_str(json).unwrap();
+        assert!(response.refresh_token.is_none());
+    }
+
+    #[test]
+    fn test_redirect_uri_is_localhost() {
+        assert!(REDIRECT_URI.starts_with("http://localhost"));
+    }
+}
