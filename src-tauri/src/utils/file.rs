@@ -28,6 +28,7 @@ impl GoogleFileType {
     }
 
     /// Get the icon/emoji for this file type
+    #[cfg(test)]
     pub fn icon(&self) -> &'static str {
         match self {
             GoogleFileType::Document => "📄",
@@ -60,6 +61,7 @@ pub fn get_mime_type(path: &Path) -> String {
 }
 
 /// Check if a file extension is supported
+#[cfg(test)]
 pub fn is_supported_extension(extension: &str) -> bool {
     let ext = extension.to_lowercase();
     matches!(
@@ -71,6 +73,7 @@ pub fn is_supported_extension(extension: &str) -> bool {
 }
 
 /// Get all supported extensions as a list
+#[cfg(test)]
 pub fn supported_extensions() -> Vec<&'static str> {
     vec![
         // Documents

@@ -12,6 +12,7 @@ pub struct DriveFolder {
 #[derive(Debug, Deserialize)]
 struct FolderListResponse {
     files: Vec<DriveFolder>,
+    #[allow(dead_code)]
     #[serde(rename = "nextPageToken")]
     next_page_token: Option<String>,
 }
@@ -63,6 +64,7 @@ pub async fn create_folder(name: String, parent_id: Option<String>) -> Result<Dr
 }
 
 /// Get the web URL for a file
+#[cfg(test)]
 pub fn get_file_url(file_id: &str, file_type: &str) -> String {
     match file_type {
         "application/vnd.google-apps.document" => {

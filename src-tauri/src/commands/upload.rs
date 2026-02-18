@@ -134,7 +134,7 @@ pub async fn upload_file(
         #[serde(rename = "webViewLink")]
         web_view_link: String,
         #[serde(rename = "mimeType")]
-        mime_type: String,
+        _mime_type: String,
     }
 
     let drive_file: DriveFile = response

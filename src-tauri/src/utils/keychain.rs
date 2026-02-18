@@ -41,12 +41,14 @@ pub fn delete(key: &str) -> Result<()> {
 }
 
 /// Store a JSON-serializable value
+#[allow(dead_code)]
 pub fn store_json<T: serde::Serialize>(key: &str, value: &T) -> Result<()> {
     let json = serde_json::to_string(value)?;
     store(key, &json)
 }
 
 /// Retrieve and deserialize a JSON value
+#[allow(dead_code)]
 pub fn retrieve_json<T: serde::de::DeserializeOwned>(key: &str) -> Result<Option<T>> {
     match retrieve(key)? {
         Some(json) => {
@@ -89,6 +91,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::const_is_empty)]
     fn test_key_constants_not_empty() {
         assert!(!keys::ACCESS_TOKEN.is_empty());
         assert!(!keys::REFRESH_TOKEN.is_empty());
