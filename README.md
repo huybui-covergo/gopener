@@ -1,105 +1,116 @@
-# Gopener - Google Office Bridge
+# Gopener
 
-A cross-platform desktop application that allows you to upload Office files to Google Drive with automatic conversion to Google Workspace formats (Docs, Sheets, Slides).
+A lightweight desktop app that uploads Office files to Google Drive and converts them to Google Workspace formats — Docs, Sheets, and Slides.
+
+Built with [Tauri 2](https://tauri.app/), [Vue 3](https://vuejs.org/), and Rust.
 
 ## Features
 
-- **Quick Upload**: Double-click any Office file to upload it to Google Drive
-- **Drag & Drop**: Drag files into the app window for easy uploading
-- **Automatic Conversion**: Files are automatically converted to Google Workspace format
-- **Folder Selection**: Browse and select destination folders in Google Drive
-- **Recent Files**: Quick access to recently uploaded files
-- **Custom OAuth**: Use your own Google Cloud credentials for enhanced privacy
+- **Double-click to upload** — associate Office file types so they open directly in Gopener
+- **Drag and drop** — drop files onto the window to upload
+- **Auto-conversion** — files are converted to native Google Workspace formats on upload
+- **Folder picker** — browse your Drive and choose a destination folder
+- **Recent files** — quick access to your last 10 uploads
+- **Custom OAuth credentials** — bring your own Google Cloud project for full control over API access
+- **Secure storage** — tokens and credentials are stored in the system keychain (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux)
 
-## Supported File Types
+## Supported Formats
 
-### Google Docs
-- `.doc` - Microsoft Word 97-2003
-- `.docx` - Microsoft Word 2007+
-- `.odt` - OpenDocument Text
-- `.rtf` - Rich Text Format
-- `.txt` - Plain Text
+| Target Format  | Source Extensions                            |
+| -------------- | -------------------------------------------- |
+| Google Docs    | `.doc`, `.docx`, `.odt`, `.rtf`, `.txt`      |
+| Google Sheets  | `.xls`, `.xlsx`, `.ods`, `.csv`, `.tsv`      |
+| Google Slides  | `.ppt`, `.pptx`, `.odp`                      |
 
-### Google Sheets
-- `.xls` - Microsoft Excel 97-2003
-- `.xlsx` - Microsoft Excel 2007+
-- `.ods` - OpenDocument Spreadsheet
-- `.csv` - Comma Separated Values
-- `.tsv` - Tab Separated Values
-
-### Google Slides
-- `.ppt` - Microsoft PowerPoint 97-2003
-- `.pptx` - Microsoft PowerPoint 2007+
-- `.odp` - OpenDocument Presentation
-
-## Development
+## Getting Started
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
 - [Rust](https://www.rust-lang.org/) 1.70+
-- [Tauri CLI](https://tauri.app/) 2.x
+- Platform dependencies for Tauri — see the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/)
 
-### Setup
+### Install and Run
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/gopener.git
-   cd gopener
-   ```
+```bash
+git clone https://github.com/nicepkg/gopener.git
+cd gopener
+npm install
+npm run tauri dev
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Google OAuth Setup
 
-3. Set up Google OAuth credentials:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable the Google Drive API
-   - Create OAuth 2.0 credentials (Desktop app)
-   - Update the `DEFAULT_CLIENT_ID` in `src-tauri/src/commands/auth.rs`
+The app needs OAuth credentials to access Google Drive.
 
-4. Run in development mode:
-   ```bash
-   npm run tauri dev
-   ```
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project and enable the **Google Drive API**
+3. Under **Credentials**, create an **OAuth 2.0 Client ID** (application type: Desktop)
+4. Either:
+   - Set the client ID in `src-tauri/src/commands/auth.rs` (`DEFAULT_CLIENT_ID`), or
+   - Enter your credentials at runtime via **Settings > Custom OAuth**
 
-### Building
+Authentication uses the OAuth 2.0 PKCE flow — no client secret is required for the default flow.
 
-Build for production:
+### Build for Production
 
 ```bash
 npm run tauri build
 ```
 
-This will create platform-specific installers in `src-tauri/target/release/bundle/`.
+Installers are output to `src-tauri/target/release/bundle/`.
 
-## Architecture
+## Project Structure
 
 ```
-gopener/
-├── src/                          # Vue 3 frontend
-│   ├── components/               # Vue components
-│   ├── stores/                   # Pinia state stores
-│   ├── services/                 # API services
-│   └── assets/                   # Styles and assets
-├── src-tauri/                    # Rust backend
-│   ├── src/
-│   │   ├── commands/             # Tauri commands
-│   │   ├── google/               # Google API integration
-│   │   └── utils/                # Utilities
-│   └── tauri.conf.json           # Tauri configuration
-└── package.json
+src/                        # Frontend (Vue 3 + TypeScript)
+├── components/             # UI — AuthButton, FileUploader, FolderBrowser, etc.
+├── stores/                 # Pinia stores — auth, upload, settings, oauth-config
+├── services/               # Tauri command wrappers and Google API helpers
+└── assets/                 # Styles
+
+src-tauri/                  # Backend (Rust)
+├── src/
+│   ├── commands/           # Tauri IPC commands — auth, upload, storage, file associations
+│   ├── google/             # Drive API client and operations
+│   └── utils/              # File type detection, keychain helpers
+├── Cargo.toml
+└── tauri.conf.json
 ```
+
+## Scripts
+
+| Command                    | Description                          |
+| -------------------------- | ------------------------------------ |
+| `npm run tauri dev`        | Start the app in development mode    |
+| `npm run tauri build`      | Build platform-specific installers   |
+| `npm run build`            | Build the frontend only              |
+| `npm run test`             | Run frontend unit tests (Vitest)     |
+| `npm run test:coverage`    | Run tests with coverage report       |
+
+## CI
+
+GitHub Actions runs on pull requests to `main`:
+
+- **Frontend** — type checking (`vue-tsc`), unit tests, build
+- **Backend** — Clippy lints and `cargo test` on Ubuntu, macOS, and Windows
+- **Integration** — full Tauri build on all three platforms
 
 ## Security
 
-- OAuth tokens are stored securely in the system keychain
-- PKCE flow is used for OAuth authentication
-- Custom credentials are stored encrypted
-- No sensitive data is transmitted to third-party servers
+- OAuth tokens stored in the OS keychain, not on disk
+- PKCE flow — no client secret exposed in the binary
+- Custom credentials encrypted before storage
+- No telemetry or third-party data collection
+
+## Platform Support
+
+| Platform | Minimum Version |
+| -------- | --------------- |
+| Windows  | 10              |
+| macOS    | 10.15 Catalina  |
+| Linux    | WebKit2GTK 4.1+ |
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+[MIT](LICENSE)
