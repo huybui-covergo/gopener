@@ -1,12 +1,9 @@
+use crate::config;
 use crate::utils::keychain::{self, keys};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-
-// Default OAuth credentials (users can override with their own)
-const DEFAULT_CLIENT_ID: &str = "YOUR_CLIENT_ID.apps.googleusercontent.com";
-const REDIRECT_URI: &str = "http://localhost:8085";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenResponse {
@@ -39,11 +36,11 @@ fn generate_pkce() -> (String, String) {
     (code_verifier, code_challenge)
 }
 
-/// Get OAuth client ID (custom or default)
+/// Get OAuth client ID (custom keychain override, or compile-time default)
 async fn get_client_id() -> String {
     match keychain::retrieve(keys::CUSTOM_CLIENT_ID) {
         Ok(Some(id)) if !id.is_empty() => id,
-        _ => DEFAULT_CLIENT_ID.to_string(),
+        _ => config::GOOGLE_CLIENT_ID.to_string(),
     }
 }
 
@@ -72,7 +69,7 @@ pub async fn get_auth_url() -> Result<String, String> {
     .join(" ");
 
     let auth_url = format!(
-        "https://accounts.google.com/o/oauth2/v2/auth?\
+        "{}?\
         client_id={}&\
         redirect_uri={}&\
         response_type=code&\
@@ -81,8 +78,9 @@ pub async fn get_auth_url() -> Result<String, String> {
         code_challenge_method=S256&\
         access_type=offline&\
         prompt=consent",
+        config::GOOGLE_AUTH_ENDPOINT,
         urlencoding::encode(&client_id),
-        urlencoding::encode(REDIRECT_URI),
+        urlencoding::encode(config::OAUTH_REDIRECT_URI),
         urlencoding::encode(&scopes),
         urlencoding::encode(&code_challenge)
     );
@@ -106,18 +104,17 @@ pub async fn exchange_code(code: String) -> Result<AuthState, String> {
     let mut params = vec![
         ("code", code),
         ("client_id", client_id),
-        ("redirect_uri", REDIRECT_URI.to_string()),
+        ("redirect_uri", config::OAUTH_REDIRECT_URI.to_string()),
         ("grant_type", "authorization_code".to_string()),
         ("code_verifier", code_verifier),
     ];
 
-    // Add client secret if using custom credentials
     if let Some(secret) = client_secret {
         params.push(("client_secret", secret));
     }
 
     let response = client
-        .post("https://oauth2.googleapis.com/token")
+        .post(config::GOOGLE_TOKEN_ENDPOINT)
         .form(&params)
         .send()
         .await
@@ -182,7 +179,7 @@ pub async fn refresh_token() -> Result<AuthState, String> {
     }
 
     let response = client
-        .post("https://oauth2.googleapis.com/token")
+        .post(config::GOOGLE_TOKEN_ENDPOINT)
         .form(&params)
         .send()
         .await
@@ -374,6 +371,6 @@ mod tests {
 
     #[test]
     fn test_redirect_uri_is_localhost() {
-        assert!(REDIRECT_URI.starts_with("http://localhost"));
+        assert!(config::OAUTH_REDIRECT_URI.starts_with("http://localhost"));
     }
 }

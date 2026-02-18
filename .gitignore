@@ -28,6 +28,7 @@ src-tauri/gen/
 .env.*.local
 .env.production
 .env.development
+src-tauri/.env
 
 # Editor directories and files
 .vscode/*

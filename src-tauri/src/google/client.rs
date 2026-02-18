@@ -1,8 +1,7 @@
 use crate::commands::auth::get_valid_token;
+use crate::config;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
-
-const DRIVE_API_BASE: &str = "https://www.googleapis.com/drive/v3";
 
 pub struct GoogleClient {
     client: Client,
@@ -19,7 +18,7 @@ impl GoogleClient {
     }
 
     pub async fn get<T: DeserializeOwned>(&self, endpoint: &str) -> Result<T, String> {
-        let url = format!("{}{}", DRIVE_API_BASE, endpoint);
+        let url = format!("{}{}", config::GOOGLE_DRIVE_API_BASE, endpoint);
 
         let response = self
             .client
@@ -45,7 +44,7 @@ impl GoogleClient {
         endpoint: &str,
         body: &serde_json::Value,
     ) -> Result<T, String> {
-        let url = format!("{}{}", DRIVE_API_BASE, endpoint);
+        let url = format!("{}{}", config::GOOGLE_DRIVE_API_BASE, endpoint);
 
         let response = self
             .client

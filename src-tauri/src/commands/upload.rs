@@ -1,4 +1,5 @@
 use crate::commands::auth::get_valid_token;
+use crate::config;
 use crate::utils::file::{detect_file_type, get_file_info, get_mime_type};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -103,7 +104,7 @@ pub async fn upload_file(
     let client = reqwest::Client::new();
 
     let response = client
-        .post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,mimeType")
+        .post(format!("{}?uploadType=multipart&fields=id,name,webViewLink,mimeType", config::GOOGLE_DRIVE_UPLOAD_URL))
         .header("Authorization", format!("Bearer {}", access_token))
         .header("Content-Type", format!("multipart/related; boundary={}", boundary))
         .body(body)

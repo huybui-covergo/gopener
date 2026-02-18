@@ -1,3 +1,4 @@
+pub mod config;
 mod commands;
 mod google;
 mod utils;
