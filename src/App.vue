@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "./stores/auth";
 import { useSettingsStore } from "./stores/settings";
 import { useUploadStore } from "./stores/upload";
@@ -19,6 +19,8 @@ const currentView = ref<View>("upload");
 
 const showFolderBrowser = ref(false);
 
+let unlistenFileOpened: (() => void) | undefined;
+
 // Check if app was opened with a file argument
 onMounted(async () => {
   await authStore.checkAuth();
@@ -26,10 +28,14 @@ onMounted(async () => {
 
   // Listen for file opened via CLI args
   const { listen } = await import("@tauri-apps/api/event");
-  listen<string>("file-opened", (event) => {
+  unlistenFileOpened = await listen<string>("file-opened", (event) => {
     uploadStore.setFile(event.payload);
     currentView.value = "quick";
   });
+});
+
+onUnmounted(() => {
+  unlistenFileOpened?.();
 });
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
